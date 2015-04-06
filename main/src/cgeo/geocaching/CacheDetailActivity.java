@@ -165,7 +165,7 @@ public class CacheDetailActivity extends AbstractViewPagerActivity<CacheDetailAc
     private String geocode;
     private Geocache cache;
     @NonNull
-    private final List<Trackable> genericTrackables = new ArrayList<>();
+    final List<Trackable> genericTrackables = new ArrayList<>();
     private final Progress progress = new Progress();
 
     private SearchResult search;
@@ -1835,7 +1835,7 @@ public class CacheDetailActivity extends AbstractViewPagerActivity<CacheDetailAc
             for (final Trackable trackable : cache.getInventory()) {
                 adapterTrackables.add(trackable);
             }
-
+            //DataStore.saveChangedCache(cache);
             view.setAdapter(adapterTrackables);
             view.setOnItemClickListener(new OnItemClickListener() {
                 @Override

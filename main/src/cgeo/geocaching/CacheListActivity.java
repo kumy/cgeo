@@ -14,9 +14,11 @@ import cgeo.geocaching.apps.cachelist.CacheListApps;
 import cgeo.geocaching.apps.cachelist.ListNavigationSelectionActionProvider;
 import cgeo.geocaching.compatibility.Compatibility;
 import cgeo.geocaching.connector.gc.RecaptchaHandler;
+import cgeo.geocaching.connector.trackable.GeokretyConnector;
 import cgeo.geocaching.enumerations.CacheListType;
 import cgeo.geocaching.enumerations.CacheType;
 import cgeo.geocaching.enumerations.LoadFlags;
+import cgeo.geocaching.enumerations.LoadFlags.SaveFlag;
 import cgeo.geocaching.enumerations.StatusCode;
 import cgeo.geocaching.export.FieldnoteExport;
 import cgeo.geocaching.export.GpxExport;
@@ -74,9 +76,11 @@ import rx.Observable.OnSubscribe;
 import rx.Scheduler.Worker;
 import rx.Subscriber;
 import rx.Subscription;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Action0;
 import rx.functions.Action1;
 import rx.functions.Func1;
+import rx.functions.Func2;
 import rx.schedulers.Schedulers;
 import rx.subjects.ReplaySubject;
 import rx.subscriptions.CompositeSubscription;
@@ -114,8 +118,11 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -1654,8 +1661,9 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
             adapter.notifyDataSetChanged();
             updateTitle();
             showFooterMoreCaches();
+            showProgress(false);
+            loadGenericTrackablesAsync(cachesFromSearchResult);
         }
-        showProgress(false);
         hideLoading();
         invalidateOptionsMenuCompatible();
     }
@@ -1705,5 +1713,101 @@ public class CacheListActivity extends AbstractListActivity implements FilteredA
                     .setContent(R.string.showcase_cachelist_title, R.string.showcase_cachelist_text);
         }
         return null;
+    }
+
+    /**
+     * Retrieve Generic trackables from external sources and add trackables to the
+     * geocaches inventory.
+     *
+     * @param geocaches
+     *            The list of cache for which we want to add Generic Trackables.
+     */
+    public void loadGenericTrackablesAsync(final Set<Geocache> geocaches) {
+
+        final Observable<Geocache> geocachesObservable = Observable.from(geocaches).subscribeOn(RxUtils.computationScheduler);
+
+        // extract geocode String from geocache
+        final Observable<Map<String, Collection<Trackable>>> trackableMapObservable = geocachesObservable.map(new Func1<Geocache, String>() {
+            @Override
+            public String call(final Geocache geocache) {
+                //Log.e("SearchResult.Observer MAP GEOCACHE: " + geocache.getGeocode());
+                return geocache.getGeocode();
+            }
+        })
+        // group geocodes String by GKM_MAX_LOOKUP_WAYPOINTS=20
+        .buffer(20)
+        // retrieve Trackables from connectors
+        .flatMap(new Func1<Collection<String>, Observable<Trackable>>() {
+            @Override
+            public Observable<Trackable> call(final Collection<String> geocodes) {
+                Log.e("SearchResult.Observer FLATMAP TRACKABLE: " + StringUtils.join(geocodes, ','));
+                // Todo: look at each Generic Trackables connectors
+                return GeokretyConnector.searchTrackables(geocodes);
+            }
+        })
+        // DEBUG: print gk codes as they arrives
+        .map(new Func1<Trackable, Trackable>() {
+            @Override
+            public Trackable call(final Trackable trackable) {
+                Log.e("SearchResult.Observer MAP TRACKABLE: " + trackable.getGeocode());
+                return trackable;
+            }
+        })
+        // Construct a hash structure to later merge Geocaches/Trackables without double loop
+        .toMultimap(new Func1<Trackable, String>() {
+            @Override
+            public String call(final Trackable trackable) {
+                Log.e("SearchResult.Observer MULTIMAP TRACKABLE: " + trackable.getGeocode());
+                return trackable.getSpottedName();
+            }
+        }).subscribeOn(RxUtils.computationScheduler);
+
+        // merge Geocaches/Trackables
+        final Observable<List<Geocache>> updatedGeocachesObservable = Observable.zip(geocachesObservable.toList(), trackableMapObservable, new Func2<List<Geocache>, Map<String, Collection<Trackable>>, List<Geocache>>() {
+            @Override
+            public List<Geocache> call(final List<Geocache> geocaches, final Map<String, Collection<Trackable>> trackableMap) {
+                for (final Geocache geocache : geocaches) {
+                    final Collection<Trackable> trackables = trackableMap.get(geocache.getGeocode());
+                    if (trackables == null) {
+                        continue;
+                    }
+                    Log.e("SearchResult.Observer ZIP GEOCODE: " + geocache.getGeocode());
+
+                    // Todo: this is not the good way to merge inventory...  but here for testing.
+                    List<Trackable> inventory = geocache.getInventory();
+                    if (inventory == null) {
+                        inventory = new ArrayList<>();
+                        geocache.setInventory(inventory);
+                    }
+                    inventory.addAll(trackables);
+                    geocache.setInventoryItems(inventory.size());
+                }
+
+                return geocaches;
+            }
+        });
+
+        // Save updated Geocaches one shot
+        updatedGeocachesObservable.subscribe(new Action1<List<Geocache>>() {
+            @Override
+            public void call(final List<Geocache> geocaches) {
+                Log.e("SearchResult.Observer save Geocaches.");
+                DataStore.saveCaches(geocaches, EnumSet.of(SaveFlag.CACHE));
+            }
+        });
+
+        // Update the UI as responses arrives
+        updatedGeocachesObservable.subscribe(new Action1<List<Geocache>>() {
+            @Override
+            public void call(final List<Geocache> geocaches) {
+                AndroidSchedulers.mainThread().createWorker().schedule(new Action0() {
+                    @Override
+                    public void call() {
+                        Log.e("SearchResult.Observer update view (2).");
+                        updateAdapter();
+                    }
+                });
+            }
+        });
     }
 }

@@ -13,9 +13,11 @@ import cgeo.geocaching.network.Network;
 import cgeo.geocaching.network.Parameters;
 import cgeo.geocaching.settings.Settings;
 import cgeo.geocaching.utils.Log;
+import cgeo.geocaching.utils.RxUtils;
 import cgeo.geocaching.utils.Version;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.eclipse.jdt.annotation.NonNull;
@@ -23,13 +25,14 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.xml.sax.InputSource;
 
 import rx.Observable;
+import rx.functions.Func0;
 import rx.functions.Func1;
 
 import android.content.Context;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -108,11 +111,48 @@ public class GeokretyConnector extends AbstractTrackableConnector {
                 return Collections.emptyList();
             }
             final InputSource is = new InputSource(response);
-            return GeokretyParser.parse(is);
+            final List<Trackable> trackables = GeokretyParser.parse(is);
+
+            if (CollectionUtils.isNotEmpty(trackables)) {
+                for (final Trackable trackable: trackables) {
+                    DataStore.saveTrackable(trackable);
+                }
+            }
+            return trackables;
         } catch (final Exception e) {
             Log.w("GeokretyConnector.searchTrackables", e);
             return Collections.emptyList();
         }
+    }
+
+    @NonNull
+    public static Observable<Trackable> searchTrackables(final Collection<String> geocodes) {
+        return Observable.defer(new Func0<Observable<Trackable>>() {
+
+            @Override
+            public Observable<Trackable> call() {
+                Log.d("GeokretyConnector.searchTrackables: wpts=" + geocodes);
+                try {
+                    final InputStream response = Network.getResponseStream(Network.getRequest(getUrlCache() + "/export2.php?wpts=" + StringUtils.join(geocodes, ',')));
+                    if (response == null) {
+                        Log.e("GeokretyConnector.searchTrackable: No data from server");
+                        return Observable.empty();
+                    }
+                    final InputSource is = new InputSource(response);
+                    final List<Trackable> trackables = GeokretyParser.parse(is);
+
+                    if (CollectionUtils.isNotEmpty(trackables)) {
+                        for (final Trackable trackable: trackables) {
+                            DataStore.saveTrackable(trackable);
+                        }
+                    }
+                    return Observable.from(trackables);
+                } catch (final Exception e) {
+                    Log.w("GeokretyConnector.searchTrackables", e);
+                    return Observable.empty();
+                }
+            }
+        }).subscribeOn(RxUtils.networkScheduler);
     }
 
     @Override
@@ -139,10 +179,17 @@ public class GeokretyConnector extends AbstractTrackableConnector {
                 return Collections.emptyList();
             }
             final InputSource is = new InputSource(response);
-            return GeokretyParser.parse(is);
+            final List<Trackable> trackables = GeokretyParser.parse(is);
+
+            if (CollectionUtils.isNotEmpty(trackables)) {
+                for (final Trackable trackable: trackables) {
+                    DataStore.saveTrackable(trackable);
+                }
+            }
+            return ListUtils.emptyIfNull(trackables);
         } catch (final Exception e) {
             Log.w("GeokretyConnector.loadInventory", e);
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
     }
 
@@ -289,6 +336,7 @@ public class GeokretyConnector extends AbstractTrackableConnector {
                 return new ImmutablePair<>(StatusCode.LOG_POST_ERROR_GK, response.getRight());
             }
             Log.i("Geokrety Log successfully posted to trackable #" + trackableLog.trackCode);
+            // TODO update cache Datastore: add/remove GK
             return new ImmutablePair<>(StatusCode.NO_ERROR, Collections.<String> emptyList());
         } catch (final RuntimeException e) {
             Log.w("GeokretyConnector.searchTrackable", e);

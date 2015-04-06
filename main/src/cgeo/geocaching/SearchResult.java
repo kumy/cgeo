@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -220,6 +221,7 @@ public class SearchResult implements Parcelable {
         final SearchResult result = new SearchResult(this);
         result.geocodes.clear();
         final List<Geocache> includedCaches = new ArrayList<>();
+        final HashMap<String,Geocache> geocacheMap = new HashMap<>();
         final Set<Geocache> caches = DataStore.loadCaches(geocodes, LoadFlags.LOAD_CACHE_OR_DB);
         int excluded = 0;
         for (final Geocache cache : caches) {
@@ -229,8 +231,10 @@ public class SearchResult implements Parcelable {
                 excluded++;
             } else {
                 includedCaches.add(cache);
+                geocacheMap.put(cache.getGeocode(), cache);
             }
         }
+
         result.addAndPutInCache(includedCaches);
         // decrease maximum number of caches by filtered ones
         result.setTotalCountGC(result.getTotalCountGC() - excluded);
@@ -267,6 +271,7 @@ public class SearchResult implements Parcelable {
         }
         DataStore.saveCaches(caches, EnumSet.of(SaveFlag.CACHE));
     }
+
 
     public boolean isEmpty() {
         return geocodes.isEmpty();
