@@ -76,13 +76,21 @@ public interface TrackableConnector {
     public Trackable searchTrackable(final String geocode, final String guid, final String id);
 
     /**
-     * Return a Trackable corresponding to the Tracable Geocode.
+     * Return list of Trackable in a Geocache geocode.
      *
-     * @param geocode the trackable
-     * @return the Trackable object.
+     * @param geocode the Geocache geocode
+     * @return a list of Trackables objects.
      */
     @NonNull
     public List<Trackable> searchTrackables(final String geocode);
+
+    /**
+     * Return list of Trackables from a list of Geocaches geocode.
+     * @param geocodes list of Geocaches geocodes
+     * @return a list of Trackables objects.
+     */
+    @NonNull
+    public List<Trackable> searchTrackables(final List<String> geocodes);
 
     /**
      * Return a Trackable id from an url.

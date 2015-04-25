@@ -117,6 +117,32 @@ public class GeokretyConnector extends AbstractTrackableConnector {
 
     @Override
     @NonNull
+    public List<Trackable> searchTrackables(final List<String> geocodes) {
+        Log.d("GeokretyConnector.searchTrackables: wpts=" + geocodes);
+        try {
+            Collections.sort(geocodes);
+            final InputStream response = Network.getResponseStream(Network.getRequest(getUrlCache() + "/export2.php?wpts=" + StringUtils.join(geocodes, ',')));
+            if (response == null) {
+                Log.e("GeokretyConnector.searchTrackable: No data from server");
+                return Collections.emptyList();
+            }
+            final InputSource is = new InputSource(response);
+            final List<Trackable> trackables = GeokretyParser.parse(is);
+
+            if (CollectionUtils.isNotEmpty(trackables)) {
+                for (final Trackable trackable : trackables) {
+                    DataStore.saveTrackable(trackable);
+                }
+            }
+            return trackables;
+        } catch (final Exception e) {
+            Log.w("GeokretyConnector.searchTrackables", e);
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
+    @NonNull
     public List<Trackable> loadInventory() {
         return loadInventory(0);
     }

@@ -57,6 +57,12 @@ public abstract class AbstractTrackableConnector implements TrackableConnector {
 
     @Override
     @NonNull
+    public List<Trackable> searchTrackables(final List<String> geocodes) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    @NonNull
     public List<Trackable> loadInventory() {
         return Collections.emptyList();
     }
