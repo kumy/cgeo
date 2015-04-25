@@ -77,6 +77,7 @@ import rx.Subscription;
 import rx.android.app.AppObservable;
 import rx.functions.Action0;
 import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.subscriptions.CompositeSubscription;
 import rx.subscriptions.Subscriptions;
 
@@ -100,8 +101,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.LoaderManager.LoaderCallbacks;
-import android.support.v4.content.Loader;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.MenuItemCompat;
 import android.support.v7.view.ActionMode;
@@ -148,7 +147,7 @@ import java.util.regex.Pattern;
  * e.g. details, description, logs, waypoints, inventory...
  */
 public class CacheDetailActivity extends AbstractViewPagerActivity<CacheDetailActivity.Page>
-        implements CacheMenuHandler.ActivityInterface, INavigationSource, AndroidBeam.ActivitySharingInterface, EditNoteDialogListener, LoaderCallbacks<List<Trackable>> {
+        implements CacheMenuHandler.ActivityInterface, INavigationSource, AndroidBeam.ActivitySharingInterface, EditNoteDialogListener {
 
     private static final int MESSAGE_FAILED = -1;
     private static final int MESSAGE_SUCCEEDED = 1;
@@ -192,29 +191,6 @@ public class CacheDetailActivity extends AbstractViewPagerActivity<CacheDetailAc
 
     private boolean requireGeodata;
     private Subscription geoDataSubscription = Subscriptions.empty();
-
-    private List<TrackableConnector> trackablesConnectors;
-
-    @Override
-    public Loader<List<Trackable>> onCreateLoader(final int id, final Bundle bundle) {
-        for (final TrackableConnector connector: trackablesConnectors) {
-            if (id == connector.getCacheInventoryLoaderId()) {
-                return connector.getCacheInventoryLoader(app, geocode);
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public void onLoadFinished(final Loader<List<Trackable>> listLoader, final List<Trackable> trackables) {
-        genericTrackables.addAll(trackables);
-        notifyDataSetChanged();
-    }
-
-    @Override
-    public void onLoaderReset(final Loader<List<Trackable>> listLoader) {
-        // nothing
-    }
 
     @Override
     public void onCreate(final Bundle savedInstanceState) {
@@ -338,11 +314,32 @@ public class CacheDetailActivity extends AbstractViewPagerActivity<CacheDetailAc
             }
         });
 
-        // Load Generic trackables connectors Async
-        trackablesConnectors = ConnectorFactory.getGenericTrackablesConnectors();
-        for (final TrackableConnector connector: trackablesConnectors) {
-            getSupportLoaderManager().initLoader(connector.getCacheInventoryLoaderId(), null, this).forceLoad();
-        }
+        // Load Generic Trackables
+        AppObservable.bindActivity(this,
+            // Obtain the actives connectors
+            Observable.from(ConnectorFactory.getGenericTrackablesConnectors())
+            .subscribeOn(RxUtils.networkScheduler)
+            .flatMap(new Func1<TrackableConnector, Observable<Trackable>>() {
+                @Override
+                public Observable<Trackable> call(final TrackableConnector trackableConnector) {
+                    return Observable.from(trackableConnector.searchTrackables(geocode));
+                }
+            })
+        // Store trackables
+        ).doOnNext(new Action1<Trackable>() {
+            @Override
+            public void call(final Trackable trackable) {
+                // Todo: this is not really a good method, it may lead to duplicates ; ie: in OC connectors
+                // Store trackables
+                genericTrackables.add(trackable);
+            }
+        // Update the UI
+        }).doOnTerminate(new Action0() {
+            @Override
+            public void call() {
+                notifyDataSetChanged();
+            }
+        }).subscribe();
 
         locationUpdater = new CacheDetailsGeoDirHandler(this);
 
