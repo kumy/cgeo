@@ -16,6 +16,8 @@ import android.location.LocationManager;
 
 public class GpsStatusProvider {
 
+    private static final Status NO_GPS = new Status(false, 0, 0);
+
     private GpsStatusProvider() {
         // Utility class, not to be instantiated
     }
@@ -31,8 +33,6 @@ public class GpsStatusProvider {
             this.satellitesFixed = satellitesFixed;
         }
     }
-
-    private static final Status NO_GPS = new Status(false, 0, 0);
 
     public static Observable<Status> create(final Context context) {
         final Observable<Status> observable = Observable.create(new OnSubscribe<Status>() {

@@ -18,13 +18,13 @@ import javax.crypto.spec.SecretKeySpec;
 
 public final class CryptUtils {
 
-    private CryptUtils() {
-        // utility class
-    }
-
     private static final byte[] EMPTY = {};
     private static final char[] BASE64MAP1 = new char[64];
     private static final byte[] BASE64MAP2 = new byte[128];
+
+    private CryptUtils() {
+        // utility class
+    }
 
     static {
         int i = 0;

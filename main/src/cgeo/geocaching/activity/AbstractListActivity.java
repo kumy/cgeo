@@ -6,6 +6,8 @@ import android.widget.ListView;
 
 public abstract class AbstractListActivity extends AbstractActionBarActivity {
 
+    private ListView mListView;
+
     protected AbstractListActivity() {
         this(false);
     }
@@ -14,7 +16,6 @@ public abstract class AbstractListActivity extends AbstractActionBarActivity {
         super(keepScreenOn);
     }
 
-    private ListView mListView;
     protected ListView getListView() {
         if (mListView == null) {
             mListView = (ListView) findViewById(android.R.id.list);

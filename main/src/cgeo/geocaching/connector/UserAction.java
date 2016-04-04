@@ -9,6 +9,10 @@ import android.support.annotation.StringRes;
 
 public class UserAction {
 
+    @StringRes
+    public final int displayResourceId;
+    @NonNull private final Action1<Context> runnable;
+
     public static class Context {
         @NonNull
         public final String userName;
@@ -20,10 +24,6 @@ public class UserAction {
             this.activity = activity;
         }
     }
-
-    @StringRes
-    public final int displayResourceId;
-    @NonNull private final Action1<Context> runnable;
 
     public UserAction(@StringRes final int displayResourceId, final @NonNull Action1<Context> runnable) {
         this.displayResourceId = displayResourceId;

@@ -18,10 +18,6 @@ import java.util.concurrent.Executors;
 
 public class AndroidRxUtils {
 
-    private AndroidRxUtils() {
-        // Utility class, not to be instantiated
-    }
-
     public final static Scheduler computationScheduler = Schedulers.computation();
 
     public static final Scheduler networkScheduler = Schedulers.from(Executors.newFixedThreadPool(10, new RxThreadFactory("network-")));
@@ -31,13 +27,17 @@ public class AndroidRxUtils {
     private static final HandlerThread looperCallbacksThread =
             new HandlerThread("looper callbacks", Process.THREAD_PRIORITY_DEFAULT);
 
-    static {
-        looperCallbacksThread.start();
-    }
-
     public static final Looper looperCallbacksLooper = looperCallbacksThread.getLooper();
     public static final Scheduler looperCallbacksScheduler = AndroidSchedulers.handlerThread(new Handler(looperCallbacksLooper));
     public static final Worker looperCallbacksWorker = looperCallbacksScheduler.createWorker();
+
+    private AndroidRxUtils() {
+        // Utility class, not to be instantiated
+    }
+
+    static {
+        looperCallbacksThread.start();
+    }
 
     public static <T> void andThenOnUi(final Scheduler scheduler, final Func0<T> background, final Action1<T> foreground) {
         scheduler.createWorker().schedule(new Action0() {

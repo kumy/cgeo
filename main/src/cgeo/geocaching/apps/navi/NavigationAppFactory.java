@@ -81,19 +81,11 @@ public final class NavigationAppFactory {
         ANDROID_WEAR(new AndroidWearApp(), 18, R.string.pref_navigation_menu_android_wear),
         MAPSWITHME(new MapsMeApp(), 22, R.string.pref_navigation_menu_mapswithme);
 
-        NavigationAppsEnum(final App app, final int id, final int preferenceKey) {
-            this.app = app;
-            this.id = id;
-            this.preferenceKey = preferenceKey;
-            if (preferenceKey == 0 || preferenceKey == -1) {
-                throw new IllegalStateException("Every navigation app must have a boolean preference in the settings to be enabled/disabled.");
-            }
-        }
-
         /**
          * The app instance to use
          */
         public final App app;
+
         /**
          * The id - used in c:geo settings
          */
@@ -103,6 +95,15 @@ public final class NavigationAppFactory {
          * key of the related preference in the navigation menu preference screen, used for disabling the preference UI
          */
         public final int preferenceKey;
+
+        NavigationAppsEnum(final App app, final int id, final int preferenceKey) {
+            this.app = app;
+            this.id = id;
+            this.preferenceKey = preferenceKey;
+            if (preferenceKey == 0 || preferenceKey == -1) {
+                throw new IllegalStateException("Every navigation app must have a boolean preference in the settings to be enabled/disabled.");
+            }
+        }
 
         /*
          * display app name in array adapter

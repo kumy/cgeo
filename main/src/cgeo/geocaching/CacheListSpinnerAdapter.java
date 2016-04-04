@@ -13,12 +13,12 @@ import android.widget.TextView;
 
 class CacheListSpinnerAdapter extends ArrayAdapter<AbstractList> {
 
+    private final CacheListActivity cacheListActivity;
+
     static class ViewHolder {
         TextView title;
         TextView subtitle;
     }
-
-    private final CacheListActivity cacheListActivity;
 
     public CacheListSpinnerAdapter(final CacheListActivity context, final int resource) {
         super(context, resource);

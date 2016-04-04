@@ -35,15 +35,15 @@ public enum CacheSize {
      */
     private final String ocSize2;
 
+    @NonNull
+    final private static Map<String, CacheSize> FIND_BY_ID = new HashMap<>();
+
     CacheSize(@NonNull final String id, final int comparable, final int stringId, final String ocSize2) {
         this.id = id;
         this.comparable = comparable;
         this.stringId = stringId;
         this.ocSize2 = ocSize2;
     }
-
-    @NonNull
-    final private static Map<String, CacheSize> FIND_BY_ID = new HashMap<>();
     static {
         for (final CacheSize cs : values()) {
             FIND_BY_ID.put(cs.id.toLowerCase(Locale.US), cs);

@@ -31,9 +31,23 @@ public enum OCPreferenceKeys {
  R.string.pref_fakekey_ocuk_authorization, R.string.pref_fakekey_ocuk_website, R.string.pref_fakekey_ocuk_register,
             R.string.pref_ocuk_tokenpublic, R.string.pref_ocuk_tokensecret, OCAuthParams.OC_UK_AUTH_PARAMS);
 
+    private static final SparseArray<OCPreferenceKeys> FIND_BY_ISACTIVE_ID;
+    private static final Map<String, OCPreferenceKeys> FIND_BY_ISACTIVE_KEY;
+    private static final SparseArray<OCPreferenceKeys> FIND_BY_AUTH_PREF_ID;
+
+    public final String siteId;
+    public final int isActivePrefId;
+    public final int prefScreenId;
+    public final int websitePrefId;
+    public final int registerPrefId;
+    public final int authPrefId;
+    public final int publicTokenPrefId;
+    public final int privateTokenPrefId;
+    public final OCAuthParams authParams;
 
     OCPreferenceKeys(final String siteId, final int isActivePrefId, final int prefScreenId, final int authPrefId,
- final int websitePrefId, final int registerPrefId, final int publicTokenPrefId, final int privateTokenPrefId, final OCAuthParams authParams) {
+                     final int websitePrefId, final int registerPrefId, final int publicTokenPrefId,
+                     final int privateTokenPrefId, final OCAuthParams authParams) {
         this.siteId = siteId;
         this.isActivePrefId = isActivePrefId;
         this.prefScreenId = prefScreenId;
@@ -44,10 +58,6 @@ public enum OCPreferenceKeys {
         this.privateTokenPrefId = privateTokenPrefId;
         this.authParams = authParams;
     }
-
-    private static final SparseArray<OCPreferenceKeys> FIND_BY_ISACTIVE_ID;
-    private static final Map<String, OCPreferenceKeys> FIND_BY_ISACTIVE_KEY;
-    private static final SparseArray<OCPreferenceKeys> FIND_BY_AUTH_PREF_ID;
 
     static {
         FIND_BY_ISACTIVE_ID = new SparseArray<>(values().length);
@@ -72,15 +82,5 @@ public enum OCPreferenceKeys {
     static OCPreferenceKeys getByKey(final String prefKey) {
         return FIND_BY_ISACTIVE_KEY.get(prefKey);
     }
-
-    public final String siteId;
-    public final int isActivePrefId;
-    public final int prefScreenId;
-    public final int websitePrefId;
-    public final int registerPrefId;
-    public final int authPrefId;
-    public final int publicTokenPrefId;
-    public final int privateTokenPrefId;
-    public final OCAuthParams authParams;
 
 }

@@ -25,15 +25,15 @@ import java.util.List;
 
 public class SelectMapfileActivity extends AbstractFileListActivity<FileSelectionListAdapter> implements IFileSelectionView {
 
-    public SelectMapfileActivity() {
-        super("map");
-    }
-
     @Bind(R.id.select_dir) protected Button selectDirectory;
 
     private String mapFile;
 
     private final static int REQUEST_DIRECTORY = 1;
+
+    public SelectMapfileActivity() {
+        super("map");
+    }
 
     @Override
     public void onCreate(final Bundle savedInstanceState) {
