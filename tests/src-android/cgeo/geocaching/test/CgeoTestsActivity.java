@@ -119,11 +119,7 @@ public class CgeoTestsActivity extends Activity {
     public void runTests(final View v) {
         final Button button = ButterKnife.findById(this, R.id.buttonRun);
         button.setEnabled(false);
-        try {
-            runTestsInternally();
-        } finally {
-            //            button.setEnabled(true);
-        }
+        runTestsInternally();
     }
 
     private void runTestsInternally() {
